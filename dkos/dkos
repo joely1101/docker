@@ -38,8 +38,14 @@ creat_os()
     #echo "docker run -idt --hostname $ins_name --name $ins_name $VOPTION $image_name"
     docker run -idt --hostname $ins_name --name $ins_name $VOPTION $image_name
     mkdir -p ~/.local/bin/
-    cp -f $0 ~/.local/bin/dkos_${ins_name}
-    
+    if [ -f $0 ];then
+        cp -f $0 ~/.local/bin/dkos_${ins_name}
+    elif [ -f ~/.local/bin/$pname ];then
+        cp -f ~/.local/bin/$pname ~/.local/bin/dkos_${ins_name}
+    else
+        echo "please put file $0 at ~/.local/bin/"
+        exit 99
+    fi
     echo "usage:"
     echo "dkos_${ins_name} login [ root ] - login ${ins_name}"
     echo "dkos_${ins_name} del - delete instance ${ins_name}"
