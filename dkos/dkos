@@ -1,0 +1,126 @@
+#!/bin/bash
+MYNAME=`whoami`
+env_check()
+{
+    docker -v &>/dev/null
+    if [ "$?" != "0" ];then
+            echo "docker is nit install, please install by run 'sudo InstallDocker.sh'"
+            echo "Or refrernce to https://docs.docker.com/install/linux/docker-ce/ubuntu/ to install docker"
+            exit 0
+    fi
+}
+env_check
+
+creat_os()
+{
+    local image_name=$2
+    local ins_name=$1
+    
+    if [ "$image_name" = "" -o "$ins_name" = "" ];then
+        echo "error parameter"
+        return
+    fi
+    
+    XX=`docker ps -a -q -f name=$ins_name`
+    if [ "$XX" != "" ];then
+        echo "dkos $ins_name is already exist"
+        return 
+    fi
+    #create OS now
+    hd_ins=`docker image ls $image_base -q`
+    if [ "$hd_ins" = "" ];then
+        docker pull image_base
+    fi
+    
+    VOPTION="-v /opt/:/opt/"
+    VOPTION+=" -v /etc/passwd:/etc/passwd:ro -v /etc/shadow:/etc/shadow:ro -v /etc/group:/etc/group:ro -v /tftpboot:/tftpboot"
+    VOPTION+=" -v$HOME:/home/$MYNAME"
+    #echo "docker run -idt --hostname $ins_name --name $ins_name $VOPTION $image_name"
+    docker run -idt --hostname $ins_name --name $ins_name $VOPTION $image_name
+    mkdir -p ~/.local/bin/
+    cp -f $0 ~/.local/bin/dkos_${ins_name}
+    
+    echo "usage:"
+    echo "dkos_${ins_name} login [ root ] - login ${ins_name}"
+    echo "dkos_${ins_name} del - delete instance ${ins_name}"
+    echo "dkos_${ins_name} save imagename - save current ${ins_name} to imagename"
+}
+save_os()
+{
+    local image_name=$2
+    local ins_name=$1
+    
+    if [ "$image_name" = "" -o "$ins_name" = "" ];then
+        echo "error parameter"
+        return
+    fi
+    
+    docker commit $ins_name $image_name
+}
+
+del_os()
+{
+    local ins_name=$1
+    if [ "$ins_name" = "" ];then
+        echo "error parameter"
+        return
+    fi
+    
+    
+    echo "Are you sure to delete this docker $ins_name [ yes | no ]"
+    read -e yesno
+    if [ "$yesno" != "yes" ];then
+        echo "abort...."
+        return
+    fi
+    
+    docker stop $ins_name
+    docker rm $ins_name
+    rm -f ~/.local/bin/dkos_${ins_name}
+}
+login_os()
+{
+    local ins_name=$1
+    if [ "$ins_name" = "" ];then
+        echo "error parameter"
+        return
+    fi
+    
+    if [ "$2" = "root" ];then
+        echo "login $ins_name as root"
+        docker exec -it $ins_name /bin/sh
+    else
+        MTNAME=`whoami`
+        #docker exec -it $ins_name su - $MYNAME
+        #echo "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
+        echo "login $ins_name as $MYNAME"
+        eval "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
+    fi
+
+}
+pname=`basename $0`
+instans=${pname/dkos_/}
+action=$1
+shift
+
+if [ "$instans" = "$pname" ];then
+    #echo "the file name not dkos_xxxxx xxxxx is for instant name"
+    instans=$1
+    shift
+fi
+
+if [ "$action" = "create" ];then
+    #echo "creat_os $instans $@"
+    creat_os $instans $@
+elif [ "$action" = "save" ];then
+    save_os $instans $@
+elif [ "$action" = "login" ];then
+    login_os $instans $@ 
+elif [ "$action" = "del" ];then
+    del_os $instans $@    
+else
+    echo "dkos create instant_name image_name - create docker from image_name"
+    echo "dkos_xxxx save image_name - save instant_name to image_name"
+    echo "dkos_xxxx del - del instant_name"
+    echo "dkos_xxxx login [ root ] - login os"
+fi
