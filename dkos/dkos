@@ -15,7 +15,8 @@ creat_os()
 {
     local image_name=$2
     local ins_name=$1
-    
+    local extra_opt="$3"
+    echo "$extra_opt"
     if [ "$image_name" = "" -o "$ins_name" = "" ];then
         echo "error parameter"
         return
@@ -36,21 +37,30 @@ creat_os()
     VOPTION+=" -v /etc/passwd:/etc/passwd:ro -v /etc/shadow:/etc/shadow:ro -v /etc/group:/etc/group:ro -v /tftpboot:/tftpboot"
     VOPTION+=" -v$HOME:/home/$MYNAME"
     VOPTION+=" --restart=always"
+    VOPTION+=" $extra_opt"
     #echo "docker run -idt --hostname $ins_name --name $ins_name $VOPTION $image_name"
     docker run -idt --hostname $ins_name --name $ins_name $VOPTION $image_name
+    docker exec -it $ins_name ls /usr/bin/linux32 > /dev/null
+    if [ "$?" = "0" ];then
+        echo "using linux32 to emulate environment"
+        dkos_prefix=dkos32_
+    else
+	    dkos_prefix=dkos_
+    fi
     mkdir -p ~/.local/bin/
     if [ -f $0 ];then
-        cp -f $0 ~/.local/bin/dkos_${ins_name}
+        cp -f $0 ~/.local/bin/${dkos_prefix}${ins_name}
     elif [ -f ~/.local/bin/$pname ];then
-        cp -f ~/.local/bin/$pname ~/.local/bin/dkos_${ins_name}
+	    ln -s $pname ~/.local/bin/${dkos_prefix}${ins_name}
+        #cp -f ~/.local/bin/$pname ~/.local/bin/${dkos_prefix}${ins_name}
     else
         echo "please put file $0 at ~/.local/bin/"
         exit 99
     fi
     echo "usage:"
-    echo "dkos_${ins_name} login [ root ] - login ${ins_name}"
-    echo "dkos_${ins_name} del - delete instance ${ins_name}"
-    echo "dkos_${ins_name} save imagename - save current ${ins_name} to imagename"
+    echo "${dkos_prefix}${ins_name} login [ root ] - login ${ins_name}"
+    echo "${dkos_prefix}${ins_name} del - delete instance ${ins_name}"
+    echo "${dkos_prefix}${ins_name} save imagename - save current ${ins_name} to imagename"
 }
 save_os()
 {
@@ -84,6 +94,7 @@ del_os()
     docker stop $ins_name
     docker rm $ins_name
     rm -f ~/.local/bin/dkos_${ins_name}
+    rm -f ~/.local/bin/dkos32_${ins_name}
 }
 login_os()
 {
@@ -95,30 +106,33 @@ login_os()
     
     if [ "$2" = "root" ];then
         echo "login $ins_name as root"
-        docker exec -it $ins_name /bin/bash
+        docker exec -it $ins_name  $dolinux32 /bin/bash
     else
         MTNAME=`whoami`
         #docker exec -it $ins_name su - $MYNAME
         #echo "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
         echo "login $ins_name as $MYNAME"
-        eval "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
+        eval "docker exec -it $ins_name $dolinux32 /bin/bash -c 'cd $PWD&&su $MYNAME'"
     fi
 
 }
 pname=`basename $0`
-instans=${pname/dkos_/}
 action=$1
 shift
 
-if [ "$instans" = "$pname" ];then
-    #echo "the file name not dkos_xxxxx xxxxx is for instant name"
+if [[ $pname == dkos_* ]]; then
+    instans=${pname/dkos_/}
+elif [[ $pname == dkos32_* ]]; then
+    instans=${pname/dkos32_/}
+    dolinux32=linux32
+else 
     instans=$1
-    shift
+    shift    
 fi
 
 if [ "$action" = "create" ];then
-    #echo "creat_os $instans $@"
-    creat_os $instans $@
+    echo "creat_os $instans $@"
+    creat_os $instans "$1" "$2"
 elif [ "$action" = "save" ];then
     save_os $instans $@
 elif [ "$action" = "login" ];then
