@@ -43,16 +43,22 @@ creat_os()
     docker exec -it $ins_name ls /usr/bin/linux32 > /dev/null
     if [ "$?" = "0" ];then
         echo "using linux32 to emulate environment"
-        dkos_prefix=dkos32_
-    else
-	    dkos_prefix=dkos_
+        have32=1
     fi
+	    dkos_prefix=dkos_
+    
     mkdir -p ~/.local/bin/
     if [ -f $0 ];then
         cp -f $0 ~/.local/bin/${dkos_prefix}${ins_name}
+	if [ "$have32" = "1" ];then
+	    cp -f $0 ~/.local/bin/dkos32_${ins_name}
+	fi
     elif [ -f ~/.local/bin/$pname ];then
 	    ln -s $pname ~/.local/bin/${dkos_prefix}${ins_name}
-        #cp -f ~/.local/bin/$pname ~/.local/bin/${dkos_prefix}${ins_name}
+	if [ "$have32" = "1" ];then
+	    ln -s $pname ~/.local/bin/dkos32_${ins_name}
+	fi
+	#cp -f ~/.local/bin/$pname ~/.local/bin/${dkos_prefix}${ins_name}
     else
         echo "please put file $0 at ~/.local/bin/"
         exit 99
