@@ -1,6 +1,7 @@
 #!/bin/bash
-IMAGES_NAME=ubuntu:arm64-18.04.3
-OUT_FILE=ubuntu-arm64-18.04.3.tar
+UBUNTU_VERSION=18.04.3
+IMAGES_NAME=ubuntu:arm64-${UBUNTU_VERSION}
+OUT_FILE=ubuntu-arm64-${UBUNTU_VERSION}.tar
 error_out()
 {
     echo "fail on =$@="
@@ -21,6 +22,9 @@ env_check()
 }
 build()
 {
+    if [ ! -f base-ubuntu.tgz ];then
+        run_cmd "wget -O base-ubuntu.tgz http://cdimage.ubuntu.com/ubuntu-base/releases/${UBUNTU_VERSION}/release/ubuntu-base-${UBUNTU_VERSION}-base-arm64.tar.gz"
+    fi
     run_cmd "docker build --no-cache -t $IMAGES_NAME ."
 }
 
