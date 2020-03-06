@@ -143,6 +143,13 @@ elif [ "$action" = "save" ];then
     save_os $instans $@
 elif [ "$action" = "login" ];then
     login_os $instans $@ 
+elif [ "$action" = "sh" ];then
+	MTNAME=`whoami`
+	command=$@
+	[ "$command" = "" ] && echo "command not found"
+	echo "run '$command' in Machine  $inst_hostname"
+	eval "docker exec -it $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"$command\" $MTNAME'"
+
 elif [ "$action" = "del" ];then
     del_os $instans $@    
 else
@@ -150,4 +157,5 @@ else
     echo "dkos_xxxx save image_name - save instant_name to image_name"
     echo "dkos_xxxx del - del instant_name"
     echo "dkos_xxxx login [ root ] - login os"
+    echo "dkos_xxxx sh 'xx;xx;' - exec sh command by curent user"
 fi
