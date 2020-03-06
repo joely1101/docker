@@ -63,10 +63,17 @@ creat_os()
         echo "please put file $0 at ~/.local/bin/"
         exit 99
     fi
-    echo "usage:"
+    echo -e "\nusage:"
     echo "${dkos_prefix}${ins_name} login [ root ] - login ${ins_name}"
     echo "${dkos_prefix}${ins_name} del - delete instance ${ins_name}"
     echo "${dkos_prefix}${ins_name} save imagename - save current ${ins_name} to imagename"
+    echo "${dkos_prefix}${ins_name} sh 'ls;ps' - exec sh command by curent user"
+    
+    echo -e "\n\n or usage:"
+    echo "dkos login ${ins_name} [ root ] - login ${ins_name}"
+    echo "dkos del ${ins_name} - delete instance ${ins_name}"
+    echo "dkos save ${ins_name} imagename - save current ${ins_name} to imagename"
+    echo "dkos sh ${ins_name} 'xx;xx;' - exec sh command by curent user"
 }
 save_os()
 {
@@ -141,6 +148,12 @@ if [ "$action" = "create" ];then
     creat_os $instans "$1" "$2"
 elif [ "$action" = "save" ];then
     save_os $instans $@
+elif [ "$action" = "ls" ];then
+    all_dkos=`ls $HOME/.local/bin/dkos_* | xargs -i basename {}`
+    for app in $all_dkos;do
+        instans=${app/dkos_/}
+        echo $instans
+    done
 elif [ "$action" = "login" ];then
     login_os $instans $@ 
 elif [ "$action" = "sh" ];then
@@ -148,14 +161,15 @@ elif [ "$action" = "sh" ];then
 	command=$@
 	[ "$command" = "" ] && echo "command not found"
 	echo "run '$command' in Machine  $inst_hostname"
-	eval "docker exec -it $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"$command\" $MTNAME'"
+	eval "docker exec -it $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"[ -f /etc/dkos.env ] && source /etc/dkos.env ;$command\" $MTNAME'"
 
 elif [ "$action" = "del" ];then
     del_os $instans $@    
 else
     echo "dkos create instant_name image_name - create docker from image_name"
-    echo "dkos_xxxx save image_name - save instant_name to image_name"
-    echo "dkos_xxxx del - del instant_name"
-    echo "dkos_xxxx login [ root ] - login os"
-    echo "dkos_xxxx sh 'xx;xx;' - exec sh command by curent user"
+    echo "dkos save instant_name image_name - save instant_name to image_name"
+    echo "dkos del instant_name - del instant_name"
+    echo "dkos login instant_name [ root ] - login os"
+    echo "dkos sh instant_name 'xx;xx;' - exec sh command by curent user"
+    echo "dkos ls - list all os"
 fi

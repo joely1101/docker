@@ -7,13 +7,29 @@ _dkos_completions()
 
   # keep the suggestions in a local variable
   if [ "${#COMP_WORDS[@]}" == "2" ];then
-    local suggestions=($(compgen -W "create" -- "${COMP_WORDS[1]}"))
+    local suggestions=($(compgen -W "create login del sh ls" -- "${COMP_WORDS[1]}"))
   elif [ "${#COMP_WORDS[@]}" == "3" ];then
-    local suggestions=($(echo "aNOTE:name_for_this_OS example:u18_cross_arm64"))
-    COMPREPLY=("${suggestions[@]}")
-    return
+    if [ "${COMP_WORDS[1]}" == "create" ];then
+        local suggestions=($(echo "aNOTE:name_for_this_OS example:u18_cross_arm64"))
+        COMPREPLY=("${suggestions[@]}")
+        return
+    else
+        all_dkos=`ls $HOME/.local/bin/dkos_* | xargs -i basename {}`
+        listset=""
+        for app in $all_dkos;do
+            instans=${app/dkos_/}
+            listset+="$instans "
+            local suggestions=($(compgen -W "$listset" -- "${COMP_WORDS[2]}"))
+        done
+    fi
   elif [ "${#COMP_WORDS[@]}" == "4" ];then
-    local suggestions=($(compgen -W "$(docker images --format '{{.Repository}}:{{.Tag}}')" -- "${COMP_WORDS[3]}"))
+    if [ "${COMP_WORDS[1]}" == "create" ];then
+        local suggestions=($(compgen -W "$(docker images --format '{{.Repository}}:{{.Tag}}')" -- "${COMP_WORDS[3]}"))
+    elif [ "${COMP_WORDS[1]}" == "login" ];then
+        myname=`whoami`
+        users=(`echo -e "root\n$myname"`)
+        local suggestions=($(compgen -W '$(echo -e "root\n$myname")' -- "${COMP_WORDS[2]}"))
+    fi
   fi
   if [ "${#suggestions[@]}" == "1" ]; then
     # if there's only one match, we remove the command literal
