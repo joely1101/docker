@@ -49,9 +49,9 @@ creat_os()
     
     mkdir -p ~/.local/bin/
     if [ -f $0 ];then
-        cp -f $0 ~/.local/bin/${dkos_prefix}${ins_name}
+        ln -s $0 ~/.local/bin/${dkos_prefix}${ins_name}
 	if [ "$have32" = "1" ];then
-	    cp -f $0 ~/.local/bin/dkos32_${ins_name}
+	    ln -s $0 ~/.local/bin/dkos32_${ins_name}
 	fi
     elif [ -f ~/.local/bin/$pname ];then
 	    ln -s $pname ~/.local/bin/${dkos_prefix}${ins_name}
@@ -161,7 +161,7 @@ elif [ "$action" = "sh" ];then
 	command=$@
 	[ "$command" = "" ] && echo "command not found"
 	echo "run '$command' in Machine  $inst_hostname"
-	eval "docker exec -it $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"[ -f /etc/dkos.env ] && source /etc/dkos.env ;$command\" $MTNAME'"
+	eval "docker exec -t $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"[ -f /etc/dkos.env ] && source /etc/dkos.env ;$command\" $MTNAME'"
 
 elif [ "$action" = "del" ];then
     del_os $instans $@    
