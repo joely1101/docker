@@ -96,14 +96,17 @@ del_os()
         return
     fi
     
-    
-    echo "Are you sure to delete this docker $ins_name [ yes | no ]"
-    read -e yesno
-    if [ "$yesno" != "yes" ];then
-        echo "abort...."
-        return
+    if [ "$2" = "-y" ];then
+        echo "delete ${ins_name}"
+    else
+        echo "Are you sure to delete this docker $ins_name [ yes | no ]"
+        read -e yesno
+        if [ "$yesno" != "yes" ];then
+            echo "abort...."
+            return
+        fi
     fi
-    
+
     docker stop $ins_name
     docker rm $ins_name
     rm -f ~/.local/bin/dkos_${ins_name}
@@ -122,10 +125,15 @@ login_os()
         docker exec -it $ins_name  $dolinux32 /bin/bash
     else
         MTNAME=`whoami`
+	shift 1
+	if [ "$1" != "" ];then
+	    extra_cmd="$@;"
+	fi
+        
         #docker exec -it $ins_name su - $MYNAME
         #echo "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
         echo "login $ins_name as $MYNAME"
-        eval "docker exec -it $ins_name $dolinux32 /bin/bash -c 'cd $PWD&&su $MYNAME'"
+        eval "docker exec -it $ins_name $dolinux32 /bin/bash -c '$extra_cmd cd $PWD&&su $MYNAME'"
     fi
 
 }
@@ -159,8 +167,8 @@ elif [ "$action" = "login" ];then
 elif [ "$action" = "sh" ];then
 	MTNAME=`whoami`
 	command=$@
-	[ "$command" = "" ] && echo "command not found"
-	echo "run '$command' in Machine  $inst_hostname"
+	[ "$command" = "" ] && echo "command not found" && exit 99
+	#echo "run '$command' in Machine  $inst_hostname"
 	eval "docker exec -t $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"[ -f /etc/dkos.env ] && source /etc/dkos.env ;$command\" $MTNAME'"
 
 elif [ "$action" = "del" ];then
