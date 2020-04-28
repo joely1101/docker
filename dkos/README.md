@@ -2,10 +2,10 @@ Script for create new docker os.
 
 1.put dkos file in ~/.local/bin/
 
-2.install bash_complete, apt-get install bash_complete
+2.install bash-completion, apt-get install bash-completion
 
 3.copy dkos.bash_complete to /etc/bash_completion.d/
-4.exit shell andlgoin again.
+4.exit shell and lgoin again.
 
 usage:
 #dkos create myubuntu-14 ubuntu:18.04
