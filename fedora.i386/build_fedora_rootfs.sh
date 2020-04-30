@@ -1,4 +1,4 @@
-fc_version=18 
+fc_version=20
 fc_arch=i386
 download_dir=$PWD/download
 dest_rootfs_dir=$PWD/dest_rootfs
@@ -117,7 +117,8 @@ configure_yum()
         dolinux32=linux32
     fi
     
-    sed -i "s|mirrorlist=https|mirrorlist=http|"  $dest_rootfs_dir/etc/yum.repos.d/*
+    #sed -i "s|mirrorlist=https|mirrorlist=http|"  $dest_rootfs_dir/etc/yum.repos.d/*
+    sed -i "s|metalink=https|metalink=http|"  $dest_rootfs_dir/etc/yum.repos.d/*
     echo "nameserver 8.8.8.8" > $dest_rootfs_dir/etc/resolv.conf
     echo "reinstall ca-certificates and dolinux32=$dolinux32"
     chroot $dest_rootfs_dir $dolinux32 yum update ca-certificates yum rpm python
