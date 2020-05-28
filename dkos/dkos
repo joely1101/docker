@@ -1,5 +1,10 @@
 #!/bin/bash
 MYNAME=`whoami`
+Version="v0.02"
+if [ "$1" = "-v" ];then
+   echo "version: $Version"
+   exit 0
+fi
 env_check()
 {
     docker -v &>/dev/null
