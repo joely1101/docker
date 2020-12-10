@@ -1,4 +1,30 @@
 #!/bin/bash
+#setup your compile env by docker
+:<<COMMENT
+dkos create dkce golang
+docker exec -it dkce apt-get install cmake gcc-aarch64-linux-gnu libbtrfs-dev
+dkos sh dkce ./build_docker-ce.sh arm64
+
+COMMENT
+build_from_docker()
+{
+    dkos ls &>/dev/null
+    if [ "$?" != "0" ];then
+        echo "No dkos install"
+        exit 99
+    fi
+    XX=`docker ps -q -f name=dkce`
+    if [ "$XX" = "" ];then
+        echo "create compile evironment in docker"
+        dkos create dkce golang &>/dev/null
+        docker exec -it dkce apt-get update 
+        docker exec -it dkce apt-get install -y cmake gcc-aarch64-linux-gnu libbtrfs-dev
+    fi
+    echo "build now"
+    dkos sh dkce ./build_docker-ce.sh $1
+
+
+}
 test_cmd()
 {
     $1 &>/dev/null
@@ -45,8 +71,14 @@ env_init()
 }
 env_rollback()
 {
-    [ "$ORG_GOPATH" != "" ] && go env -w GOPATH=$ORG_GOPATH
-    [ "$ORG_GOARCH" != "" ] && go env -w GOARCH=$ORG_GOARCH
+    if [ "$ORG_GOPATH" != "" ];then
+        export GOPATH=$ORG_GOPATH
+        go env -w GOPATH=$ORG_GOPATH
+    fi
+    if [ "$ORG_GOARCH" != "" ];then
+        export GOARCH=$ORG_GOARCH
+        go env -w GOARCH=$ORG_GOARCH
+    fi
 }
 
 build_dockercli()
@@ -123,10 +155,14 @@ build_dockerd()
      ( 
         cd components/engine/
         export DOCKER_GITCOMMIT="$DOCKER_VERSION"
+        export DOCKER_BUILDTAGS="no_btrfs"
         ./hack/make.sh binary
         cp bundles/binary-daemon/dockerd-dev ${PREFIX}/dockerd
      )
 }
+
+[ "$1" = "dbuild" ] && build_from_docker $2 && exit 0
+
 env_init $@
 cd docker-ce
 build_dockercli
@@ -134,7 +170,6 @@ build_runc
 build_tinit
 build_my_containerd
 build_dockerd
-file $PREFIX/*
 ls -alh $PREFIX/*
 env_rollback
 
