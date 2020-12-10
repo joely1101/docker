@@ -16,7 +16,8 @@ build_from_docker()
     XX=`docker ps -q -f name=dkce`
     if [ "$XX" = "" ];then
         echo "create compile evironment in docker"
-        dkos create dkce golang &>/dev/null
+	docker pull golang
+        dkos create dkce golang
         docker exec -it dkce apt-get update 
         docker exec -it dkce apt-get install -y cmake gcc-aarch64-linux-gnu libbtrfs-dev
     fi
@@ -161,7 +162,10 @@ build_dockerd()
      )
 }
 
-[ "$1" = "dbuild" ] && build_from_docker $2 && exit 0
+if [ "$1" = "dbuild" ];then
+   build_from_docker $2
+   exit 0
+fi
 
 env_init $@
 cd docker-ce
