@@ -53,6 +53,7 @@ env_init()
     else
         #x86
         GOARCH=amd64
+	CROSS_COMPILE=
         CC=gcc
         test_cmd "$CC -v" "$CC not found"
     fi
@@ -162,8 +163,17 @@ build_dockerd()
      )
 }
 
+strip_binary()
+{
+    ${CROSS_COMPILE}strip ${PREFIX}/*
+}
+if [ "$1" = "" ];then
+   echo "$0 [ dbuild ]  [ arm64 | amd64 ]"
+   exit 0
+fi
+	
 if [ "$1" = "dbuild" ];then
-   build_from_docker $2
+   build_from_docker ${2:-amd64}
    exit 0
 fi
 
@@ -174,6 +184,7 @@ build_runc
 build_tinit
 build_my_containerd
 build_dockerd
+strip_binary
 ls -alh $PREFIX/*
 env_rollback
 
