@@ -124,10 +124,17 @@ login_os()
         echo "error parameter"
         return
     fi
-    
+    if docker exec -it $ins_name ls /bin/bash &>/dev/null ;then
+        myshell="/bin/bash"
+    elif docker exec -it $ins_name ls /bin/ash  &>/dev/null ;then
+        myshell="/bin/ash"
+    else
+        myshell="/bin/sh"
+    fi
+
     if [ "$2" = "root" ];then
         echo "login $ins_name as root"
-        docker exec -it $ins_name  $dolinux32 /bin/bash
+        docker exec -it $ins_name  $dolinux32 $myshell
     else
         MTNAME=`whoami`
 	shift 1
@@ -138,7 +145,7 @@ login_os()
         #docker exec -it $ins_name su - $MYNAME
         #echo "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
         echo "login $ins_name as $MYNAME"
-        eval "docker exec -it $ins_name $dolinux32 /bin/bash -c '$extra_cmd cd $PWD&&su $MYNAME'"
+	eval "docker exec -it $ins_name $dolinux32 $myshell -c '$extra_cmd cd $PWD&&su -s $myshell $MYNAME'"
     fi
 
 }
