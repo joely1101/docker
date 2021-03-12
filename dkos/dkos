@@ -68,12 +68,15 @@ creat_os()
         echo "please put file $0 at ~/.local/bin/"
         exit 99
     fi
+    docker exec -it $ins_name touch /etc/is_dkos
+:<<COMMENT
     echo -e "\nusage:"
     echo "${dkos_prefix}${ins_name} login [ root ] - login ${ins_name}"
     echo "${dkos_prefix}${ins_name} del - delete instance ${ins_name}"
     echo "${dkos_prefix}${ins_name} save imagename - save current ${ins_name} to imagename"
     echo "${dkos_prefix}${ins_name} sh 'ls;ps' - exec sh command by curent user"
-    
+COMMENT
+
     echo -e "\n\n or usage:"
     echo "dkos login ${ins_name} [ root ] - login ${ins_name}"
     echo "dkos del ${ins_name} - delete instance ${ins_name}"
@@ -131,21 +134,24 @@ login_os()
     else
         myshell="/bin/sh"
     fi
-
-    if [ "$2" = "root" ];then
+    docker exec -it $ins_name ls /etc/is_dkos &>/dev/null
+    ret=$?
+    if [ "$2" = "root" ] || [ "$ret" != "0" ] ;then
         echo "login $ins_name as root"
         docker exec -it $ins_name  $dolinux32 $myshell
     else
         MTNAME=`whoami`
-	shift 1
-	if [ "$1" != "" ];then
-	    extra_cmd="$@;"
-	fi
+    	shift 1
+    	if [ "$1" != "" ];then
+    	    extra_cmd="$@;"
+    	fi
         
         #docker exec -it $ins_name su - $MYNAME
         #echo "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
+	    
         echo "login $ins_name as $MYNAME"
-	eval "docker exec -it $ins_name $dolinux32 $myshell -c '$extra_cmd cd $PWD&&su -s $myshell $MYNAME'"
+        eval "docker exec -it $ins_name $dolinux32 $myshell -c '$extra_cmd cd $PWD&&su -s $myshell $MYNAME'"
+    
     fi
 
 }
