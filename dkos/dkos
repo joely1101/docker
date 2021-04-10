@@ -68,6 +68,7 @@ creat_os()
         echo "please put file $0 at ~/.local/bin/"
         exit 99
     fi
+    #echo "docker exec -it $ins_name touch /etc/is_dkos"
     docker exec -it $ins_name touch /etc/is_dkos
 :<<COMMENT
     echo -e "\nusage:"
@@ -137,8 +138,10 @@ login_os()
     docker exec -it $ins_name ls /etc/is_dkos &>/dev/null
     ret=$?
     if [ "$2" = "root" ] || [ "$ret" != "0" ] ;then
-        echo "login $ins_name as root"
+        echo "login $ins_name-${dolinux32:-linux64} as root"
         docker exec -it $ins_name  $dolinux32 $myshell
+
+	#eval "docker exec -it $ins_name $dolinux32 $myshell -c '$extra_cmd cd $PWD&&su -s $myshell root'"
     else
         MTNAME=`whoami`
     	shift 1
@@ -149,7 +152,7 @@ login_os()
         #docker exec -it $ins_name su - $MYNAME
         #echo "docker exec -it $ins_name /bin/sh -c 'cd $PWD&&su $MYNAME'"
 	    
-        echo "login $ins_name as $MYNAME"
+        echo "login $ins_name-${dolinux32:-linux64} as $MYNAME"
         eval "docker exec -it $ins_name $dolinux32 $myshell -c '$extra_cmd cd $PWD&&su -s $myshell $MYNAME'"
     
     fi
@@ -164,13 +167,17 @@ if [[ $pname == dkos_* ]]; then
 elif [[ $pname == dkos32_* ]]; then
     instans=${pname/dkos32_/}
     dolinux32=linux32
-else 
+else	
     instans=$1
+    [ -f ~/.local/$instans.islinux32 ] && dolinux32=linux32
     shift    
 fi
 
 if [ "$action" = "create" ];then
     echo "creat_os $instans $@"
+    creat_os $instans "$1" "$2"
+elif [ "$action" = "create32" ];then
+    touch ~/.local/$instans.islinux32
     creat_os $instans "$1" "$2"
 elif [ "$action" = "save" ];then
     save_os $instans $@
@@ -190,6 +197,7 @@ elif [ "$action" = "sh" ];then
 	eval "docker exec -t $instans $dolinux32 /bin/bash -c 'cd $PWD&&su -c \"[ -f /etc/dkos.env ] && source /etc/dkos.env ;$command\" $MTNAME'"
 
 elif [ "$action" = "del" ];then
+    rm -f ~/.local/$instans.islinux32 &>/dev/null
     del_os $instans $@    
 else
     echo "dkos create instant_name image_name - create docker from image_name"
