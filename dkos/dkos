@@ -1,6 +1,6 @@
 #!/bin/bash
 MYNAME=`whoami`
-Version="v0.02"
+Version="v2021-04-13"
 if [ "$1" = "-v" ];then
    echo "version: $Version"
    exit 0
@@ -21,7 +21,7 @@ creat_os()
     local image_name=$2
     local ins_name=$1
     local extra_opt="$3"
-    echo "$extra_opt"
+    #echo "$extra_opt"
     if [ "$image_name" = "" -o "$ins_name" = "" ];then
         echo "error parameter"
         return
@@ -89,11 +89,20 @@ save_os()
     local image_name=$2
     local ins_name=$1
     
-    if [ "$image_name" = "" -o "$ins_name" = "" ];then
+    if [ "$ins_name" = "" ];then
         echo "error parameter"
         return
     fi
+    if [ "$image_name" = "" ];then
+	#get image from instance
+	image_name=`docker ps -f name=$ins_name --format "{{.Image}}"`
+    fi
+    if [ "$image_name" = "" ];then
+	echo "error!!image name not found!!"
+        return
+    fi
     
+    echo "image save to $image_name"
     docker commit $ins_name $image_name
 }
 
@@ -116,10 +125,12 @@ del_os()
         fi
     fi
 
-    docker stop $ins_name
-    docker rm $ins_name
+    docker stop $ins_name &>/dev/null
+    docker rm $ins_name &>/dev/null
+    [ $? -ne 0 ] && echo "$ins_name not fuond"
     rm -f ~/.local/bin/dkos_${ins_name}
     rm -f ~/.local/bin/dkos32_${ins_name}
+    echo "delete $ins_name finish"
 }
 login_os()
 {
@@ -158,6 +169,26 @@ login_os()
     fi
 
 }
+help()
+{
+	cat<<EOF
+dkos create instant_name image_name - create docker from image_name
+dkos create32 instant_name image_name - create docker from image_name
+dkos save instant_name [ image_name ] - save instant_name to image_name/original image
+dkos del instant_name - del instant_name
+dkos login instant_name [ root ] [ extra cmd when login ] - login os
+dkos sh instant_name 'xx;xx;' - exec sh command by curent user
+dkos ls - list all os
+dkos cf config.dkos - create docker from conf
+example config.dkos:
+DKOS_INST_NAME=ubuntu-test1
+DKOS_IMG_NAME=ubuntu:18.04
+DKOS_EXTRA_ARG="--privileged=true"
+DKOS_INST_LINUX32=1
+
+EOF
+
+}
 pname=`basename $0`
 action=$1
 shift
@@ -179,6 +210,20 @@ if [ "$action" = "create" ];then
 elif [ "$action" = "create32" ];then
     touch ~/.local/$instans.islinux32
     creat_os $instans "$1" "$2"
+elif [ "$action" = "cf" ];then
+    conf=$instans
+    if [ "$conf" = "" ] || [ ! -f $conf ];then
+        echo "file not found $conf"
+	exit 99
+    fi
+    export_list=`cat $conf | xargs`
+    echo "export $export_list"
+    export $export_list
+    if [ "$DKOS_INST_LINUX32" != "" ];then
+        touch ~/.local/$instans.islinux32
+    fi
+    creat_os "$DKOS_INST_NAME" "$DKOS_IMG_NAME" "$DKOS_EXTRA_ARG"
+  
 elif [ "$action" = "save" ];then
     save_os $instans $@
 elif [ "$action" = "ls" ];then
@@ -200,10 +245,5 @@ elif [ "$action" = "del" ];then
     rm -f ~/.local/$instans.islinux32 &>/dev/null
     del_os $instans $@    
 else
-    echo "dkos create instant_name image_name - create docker from image_name"
-    echo "dkos save instant_name image_name - save instant_name to image_name"
-    echo "dkos del instant_name - del instant_name"
-    echo "dkos login instant_name [ root ] - login os"
-    echo "dkos sh instant_name 'xx;xx;' - exec sh command by curent user"
-    echo "dkos ls - list all os"
+    help
 fi
