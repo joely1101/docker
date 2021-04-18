@@ -1,3 +1,4 @@
+```
 Script for create new docker os.
 
 1.put dkos file in ~/.local/bin/
@@ -22,3 +23,4 @@ dkos_myubuntu-14 will be created to operate myubuntu-14 os.
 
 
 
+```
